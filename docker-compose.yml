@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: flipbridge
+      POSTGRES_PASSWORD: flipbridge
+      POSTGRES_DB: flipbridge
+    ports:
+      - "5432:5432"
+    volumes:
+      - flipbridge_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flipbridge -d flipbridge"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  flipbridge_pg:

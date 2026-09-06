@@ -18,18 +18,36 @@ Marketplace credentials are not required. Lookups are mocked, fields stay editab
 
 ## Run locally
 
+Postgres is required (SQLite will not deploy to Vercel). The default path is Docker Compose.
+
 ```bash
+cp .env.example .env
+docker compose up -d
 npm install
 npm run dev
 ```
 
-`npm run dev` generates the Prisma client, pushes the SQLite schema, and seeds demo data if needed. The app listens on [http://127.0.0.1:43147](http://127.0.0.1:43147).
+`npm run dev` generates the Prisma client, applies migrations, and seeds demo data if needed. The app listens on [http://127.0.0.1:43147](http://127.0.0.1:43147).
 
-Copy `.env.example` to `.env` only if you want to change the defaults. The setup script creates `.env` when it is missing.
+`.env.example` defaults:
 
 ```
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://flipbridge:flipbridge@127.0.0.1:5432/flipbridge"
+DIRECT_URL="postgresql://flipbridge:flipbridge@127.0.0.1:5432/flipbridge"
 AUTH_SECRET="flipbridge-dev-secret-change-in-production"
+```
+
+`DATABASE_URL` and `DIRECT_URL` can be the same locally. In production, `DATABASE_URL` should be the pooled URL and `DIRECT_URL` the direct (non-pooled) URL so migrations can run.
+
+### Without Docker
+
+Create a database on [Neon](https://neon.tech) (or any Postgres 16 host), put both URLs in `.env`, then:
+
+```bash
+npm install
+npx prisma migrate deploy
+npx tsx prisma/seed.ts
+npm run dev
 ```
 
 ## Demo account
@@ -46,10 +64,20 @@ Try parsing:
 
 Or look up ASINs such as `B08KTZ8249` (Kindle) and `B00FLYWNYQ` (Instant Pot).
 
+## Deploy to Vercel (from Origin)
+
+See [DEPLOY.md](./DEPLOY.md). Short version: connect Vercel from the Origin Apps tab, add Vercel Postgres or Neon, set `DATABASE_URL`, `DIRECT_URL`, and `AUTH_SECRET`, then deploy. Do not mirror this repo to GitHub.
+
+Required Vercel env vars:
+
+- `DATABASE_URL` — pooled Postgres URL
+- `DIRECT_URL` — direct Postgres URL for migrations
+- `AUTH_SECRET` — session cookie secret
+
 ## Stack
 
 - Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui
-- Prisma + SQLite
+- Prisma + PostgreSQL
 - Email/password sessions (JWT cookie via `jose` + `bcryptjs`)
 
 ## Project shape
