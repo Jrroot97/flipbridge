@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime @default(now())
+  settings     Settings?
+  deals        Deal[]
+}
+
+model Settings {
+  id                      String @id @default(cuid())
+  userId                  String @unique
+  user                    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fulfillmentPreference   String @default("FBA")
+  defaultReferralFee      Float  @default(15)
+  defaultFbaFee           Float  @default(4.75)
+  defaultFbmShipping      Float  @default(6.5)
+  defaultPrepCost         Float  @default(1)
+  currency                String @default("USD")
+}
+
+model Deal {
+  id                 String   @id @default(cuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status             String   @default("RESEARCHING")
+
+  ebayUrl            String?
+  ebayTitle          String
+  ebayCondition      String   @default("Used")
+  ebayPrice          Float
+  ebayShipping       Float    @default(0)
+
+  amazonAsin         String?
+  amazonTitle        String
+  amazonPrice        Float
+  amazonCategory     String   @default("Home & Kitchen")
+
+  fulfillmentType    String   @default("FBA")
+  referralFeePercent Float
+  fulfillmentFee     Float
+  prepCost           Float    @default(0)
+  otherCost          Float    @default(0)
+  notes              String?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([userId, status])
+}
