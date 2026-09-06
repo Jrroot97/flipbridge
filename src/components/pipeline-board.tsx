@@ -5,7 +5,6 @@ import Link from "next/link";
 import { updateDealStatusAction } from "@/app/actions/deals";
 import { StatusBadge } from "@/components/status-badge";
 import { FieldSelect } from "@/components/field";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatPct, formatUsd } from "@/lib/format";
 import { calculateProfit } from "@/lib/profit";
 import {
@@ -34,6 +33,7 @@ export type PipelineDeal = {
 export function PipelineBoard({ deals }: { deals: PipelineDeal[] }) {
   const [items, setItems] = useState(deals);
   const [dragging, setDragging] = useState<string | null>(null);
+  const [view, setView] = useState<"board" | "table">("board");
   const [, startTransition] = useTransition();
 
   function moveDeal(id: string, status: DealStatus) {
@@ -44,12 +44,31 @@ export function PipelineBoard({ deals }: { deals: PipelineDeal[] }) {
   }
 
   return (
-    <Tabs defaultValue="board">
-      <TabsList>
-        <TabsTrigger value="board">Kanban</TabsTrigger>
-        <TabsTrigger value="table">Table</TabsTrigger>
-      </TabsList>
-      <TabsContent value="board" className="mt-4">
+    <div>
+      <div className="inline-flex rounded-lg bg-muted p-1">
+        <button
+          type="button"
+          onClick={() => setView("board")}
+          className={cn(
+            "h-7 rounded-md px-3 text-sm font-medium",
+            view === "board" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground",
+          )}
+        >
+          Kanban
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("table")}
+          className={cn(
+            "h-7 rounded-md px-3 text-sm font-medium",
+            view === "table" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground",
+          )}
+        >
+          Table
+        </button>
+      </div>
+      {view === "board" ? (
+      <div className="mt-4">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           {DEAL_STATUSES.map((status) => {
             const column = items.filter((deal) => deal.status === status);
@@ -87,8 +106,9 @@ export function PipelineBoard({ deals }: { deals: PipelineDeal[] }) {
             );
           })}
         </div>
-      </TabsContent>
-      <TabsContent value="table" className="mt-4">
+      </div>
+      ) : (
+      <div className="mt-4">
         <div className="overflow-x-auto rounded-2xl border border-border bg-card">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="border-b border-border text-xs text-muted-foreground">
@@ -142,8 +162,9 @@ export function PipelineBoard({ deals }: { deals: PipelineDeal[] }) {
             </tbody>
           </table>
         </div>
-      </TabsContent>
-    </Tabs>
+      </div>
+      )}
+    </div>
   );
 }
 

@@ -150,12 +150,13 @@ export function DealForm({
   }
 
   function parseEbay() {
-    if (!form.ebayUrl.trim()) {
+    const url = form.ebayUrl.trim();
+    if (!url) {
       toast.error("Paste an eBay listing URL first.");
       return;
     }
     startTransition(async () => {
-      const result = await parseEbayAction(form.ebayUrl);
+      const result = await parseEbayAction(url);
       setForm((current) => ({
         ...current,
         ebayTitle: result.ebay.title || current.ebayTitle,
