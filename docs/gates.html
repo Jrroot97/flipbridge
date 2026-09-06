@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FlipBridge — Gate log</title>
+  <script src="./gate-store.js"></script>
+  <style>
+    :root {
+      --bg: #0b1220; --panel: #121a2b; --line: #243049; --text: #e8eefc;
+      --muted: #9aa8c3; --accent: #5b8cff; --good: #3dd68c; --bad: #ff6b7a; --warn: #ffc857;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #1a2a4a 0%, var(--bg) 55%);
+      color: var(--text); line-height: 1.5;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    .wrap { width: min(1080px, calc(100% - 2rem)); margin: 0 auto; }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.25rem 0; border-bottom: 1px solid var(--line);
+    }
+    .brand { font-weight: 700; letter-spacing: -0.02em; font-size: 1.15rem; }
+    nav { display: flex; gap: 1rem; align-items: center; font-size: 0.9rem; }
+    .badge {
+      font-size: 0.75rem; color: var(--muted); border: 1px solid var(--line);
+      border-radius: 999px; padding: 0.25rem 0.65rem;
+    }
+    h1 { font-size: 1.75rem; letter-spacing: -0.03em; margin: 1.75rem 0 0.5rem; }
+    .lead { color: var(--muted); margin: 0 0 1.5rem; }
+    .card {
+      background: color-mix(in srgb, var(--panel) 92%, black);
+      border: 1px solid var(--line); border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem;
+    }
+    .card h2 { margin: 0 0 0.75rem; font-size: 1.05rem; }
+    label { display: block; font-size: 0.8rem; color: var(--muted); margin: 0.65rem 0 0.3rem; }
+    input, select, button, textarea {
+      width: 100%; border-radius: 10px; border: 1px solid var(--line);
+      background: #0d1524; color: var(--text); padding: 0.65rem 0.8rem; font-size: 0.95rem;
+    }
+    button {
+      cursor: pointer; background: var(--accent); border-color: transparent; color: #fff; font-weight: 600;
+      width: auto; padding: 0.65rem 1rem;
+    }
+    button.secondary { background: #172238; border: 1px solid var(--line); color: var(--text); }
+    button.danger { background: transparent; border: 1px solid var(--bad); color: var(--bad); }
+    .grid { display: grid; gap: 0.75rem; }
+    @media (min-width: 800px) {
+      .grid-2 { grid-template-columns: 1fr 1fr; }
+      .grid-4 { grid-template-columns: repeat(4, 1fr); }
+      .layout { grid-template-columns: 1fr 1fr; }
+    }
+    .layout { display: grid; gap: 1rem; }
+    .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.85rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th, td { text-align: left; padding: 0.55rem 0.4rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .tag {
+      display: inline-block; border-radius: 999px; padding: 0.15rem 0.55rem; font-size: 0.75rem; border: 1px solid var(--line);
+    }
+    .tag.ungated { color: var(--good); border-color: color-mix(in srgb, var(--good) 50%, var(--line)); }
+    .tag.gated { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 50%, var(--line)); }
+    .tag.approval_needed, .tag.unknown { color: var(--warn); }
+    .tag.inferred { color: var(--accent); }
+    .tag.verified { color: var(--good); }
+    .muted { color: var(--muted); font-size: 0.8rem; }
+    .lookup-out { margin-top: 0.75rem; padding: 0.75rem; border-radius: 10px; background: #0d1524; border: 1px solid var(--line); }
+    .empty { color: var(--muted); font-size: 0.9rem; padding: 0.5rem 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">FlipBridge</div>
+      <nav>
+        <a href="./">Calculator</a>
+        <a href="./gates.html">Gate log</a>
+        <span class="badge">Stored in this browser</span>
+      </nav>
+    </header>
+
+    <h1>Gate log</h1>
+    <p class="lead">
+      Log verified ungated / gated ASINs. Brand (and category) memory can mark later ASINs as
+      <strong>Inferred</strong> ungated — live checks always win.
+    </p>
+
+    <div class="layout">
+      <div class="card">
+        <h2>Record a check</h2>
+        <div class="grid grid-2">
+          <div>
+            <label for="asin">ASIN</label>
+            <input id="asin" placeholder="B0XXXXXXX" />
+          </div>
+          <div>
+            <label for="brand">Brand</label>
+            <input id="brand" placeholder="Dyson" />
+          </div>
+          <div>
+            <label for="category">Category (optional)</label>
+            <input id="category" placeholder="Vacuum cleaners" />
+          </div>
+          <div>
+            <label for="status">Status</label>
+            <select id="status">
+              <option value="ungated">Ungated</option>
+              <option value="gated">Gated</option>
+              <option value="approval_needed">Needs approval</option>
+              <option value="unknown">Unknown</option>
+            </select>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" id="btnSave">Save verified check</button>
+        </div>
+        <p class="muted">Extension will fill this automatically later. For now, log what you see in Seller Central.</p>
+      </div>
+
+      <div class="card">
+        <h2>Lookup / assume</h2>
+        <div class="grid grid-2">
+          <div>
+            <label for="qAsin">ASIN</label>
+            <input id="qAsin" placeholder="B0XXXXXXX" />
+          </div>
+          <div>
+            <label for="qBrand">Brand</label>
+            <input id="qBrand" placeholder="Dyson" />
+          </div>
+          <div>
+            <label for="qCategory">Category</label>
+            <input id="qCategory" placeholder="Vacuum cleaners" />
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" id="btnLookup">Resolve gate status</button>
+        </div>
+        <div class="lookup-out" id="lookupOut"><span class="muted">Result shows here.</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Brand memory</h2>
+      <div id="brands" class="empty">No brands yet.</div>
+    </div>
+
+    <div class="card">
+      <h2>ASIN log</h2>
+      <div id="asins" class="empty">No ASINs yet.</div>
+    </div>
+
+    <div class="card">
+      <h2>Event history</h2>
+      <div id="events" class="empty">No events yet.</div>
+      <div class="actions">
+        <button type="button" class="danger" id="btnClear">Clear all gate data</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function tagStatus(status, confidence) {
+      const conf = confidence === 'inferred'
+        ? '<span class="tag inferred">Inferred</span>'
+        : confidence === 'verified'
+          ? '<span class="tag verified">Verified</span>'
+          : '';
+      return `<span class="tag ${status}">${status}</span> ${conf}`;
+    }
+
+    function render() {
+      const db = fbLoad();
+      const brandEntries = Object.values(db.brand_gates);
+      const asinEntries = Object.values(db.asin_gates).sort((a, b) => (b.checkedAt || '').localeCompare(a.checkedAt || ''));
+
+      if (!brandEntries.length) {
+        $('brands').innerHTML = '<div class="empty">No brands yet.</div>';
+      } else {
+        $('brands').innerHTML = `<table><thead><tr><th>Brand</th><th>Status</th><th>Evidence ASINs</th><th>Updated</th></tr></thead><tbody>${
+          brandEntries.map((b) => `<tr>
+            <td>${escapeHtml(b.brand)}</td>
+            <td>${tagStatus(b.status, 'verified')}</td>
+            <td class="muted">${(b.evidence || []).join(', ') || '—'}</td>
+            <td class="muted">${fmt(b.checkedAt)}</td>
+          </tr>`).join('')
+        }</tbody></table>`;
+      }
+
+      if (!asinEntries.length) {
+        $('asins').innerHTML = '<div class="empty">No ASINs yet.</div>';
+      } else {
+        $('asins').innerHTML = `<table><thead><tr><th>ASIN</th><th>Brand</th><th>Category</th><th>Status</th><th>When</th></tr></thead><tbody>${
+          asinEntries.map((a) => `<tr>
+            <td>${escapeHtml(a.asin)}</td>
+            <td>${escapeHtml(a.brand || '—')}</td>
+            <td>${escapeHtml(a.category || '—')}</td>
+            <td>${tagStatus(a.status, 'verified')}</td>
+            <td class="muted">${fmt(a.checkedAt)}</td>
+          </tr>`).join('')
+        }</tbody></table>`;
+      }
+
+      const events = db.gate_events || [];
+      if (!events.length) {
+        $('events').innerHTML = '<div class="empty">No events yet.</div>';
+      } else {
+        $('events').innerHTML = `<table><thead><tr><th>When</th><th>Type</th><th>Detail</th></tr></thead><tbody>${
+          events.slice(0, 40).map((e) => `<tr>
+            <td class="muted">${fmt(e.at)}</td>
+            <td>${escapeHtml(e.type)}</td>
+            <td class="muted">${escapeHtml(JSON.stringify({ asin: e.asin, brand: e.brand, status: e.status, category: e.category }))}</td>
+          </tr>`).join('')
+        }</tbody></table>`;
+      }
+    }
+
+    function fmt(iso) {
+      if (!iso) return '—';
+      try { return new Date(iso).toLocaleString(); } catch { return iso; }
+    }
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    $('btnSave').onclick = () => {
+      try {
+        fbRecordAsin({
+          asin: $('asin').value,
+          brand: $('brand').value,
+          category: $('category').value,
+          status: $('status').value,
+          source: 'manual',
+        });
+        $('asin').value = '';
+        render();
+      } catch (e) {
+        alert(e.message || String(e));
+      }
+    };
+
+    $('btnLookup').onclick = () => {
+      const r = fbResolve({
+        asin: $('qAsin').value,
+        brand: $('qBrand').value,
+        category: $('qCategory').value,
+      });
+      const why = r.confidence === 'inferred'
+        ? `Inferred from ${r.inferredFrom} memory — confirm with a live Seller Central check before buying.`
+        : r.confidence === 'verified'
+          ? 'Verified from a logged ASIN check.'
+          : 'No gate data yet — check Seller Central (or extension later).';
+      $('lookupOut').innerHTML = `
+        <div>${tagStatus(r.status, r.confidence === 'none' ? '' : r.confidence)}</div>
+        <p class="muted" style="margin:0.5rem 0 0">${escapeHtml(why)}</p>
+      `;
+    };
+
+    $('btnClear').onclick = () => {
+      if (confirm('Clear all gate data in this browser?')) {
+        fbClearAll();
+        render();
+        $('lookupOut').innerHTML = '<span class="muted">Cleared.</span>';
+      }
+    };
+
+    render();
+  </script>
+</body>
+</html>
